@@ -1,0 +1,479 @@
+\documentclass[10pt]{beamer}
+
+\usepackage{amsmath}
+\usepackage{minted}
+\usepackage{fontawesome}
+
+\usetheme[progressbar=foot]{metropolis}
+\usepackage{appendixnumberbeamer}
+
+\usepackage{booktabs}
+\usepackage[scale=2]{ccicons}
+
+\usepackage{pgfplots}
+\usepgfplotslibrary{dateplot}
+
+\usepackage{xspace}
+
+\title{Types}
+\subtitle{What they are, why to care, and how to use them in Python}
+\date{10 June, 2018}
+\author{Oliver Ford}
+\institute{Arm - Mbed Cloud}
+
+
+\makeatletter
+\setlength{\metropolis@progressinheadfoot@linewidth}{1pt}
+\makeatother
+
+\begin{document}
+\setbeamertemplate{frame footer}{\insertsection}
+
+{
+\setbeamerfont{title}{size=\huge}
+\setbeamerfont{subtitle}{size=\normalsize}
+\maketitle
+}
+
+\setlength{\leftmargini}{0pt}
+
+\begin{frame}{Table of contents}
+  \setbeamertemplate{section in toc}[sections numbered]
+  \tableofcontents[hideallsubsections]
+\end{frame}
+
+\section{Background}
+
+\begin{frame}[fragile]{What \emph{is} a type anyway}
+    \onslide<+->{\begin{itemize}[<+->]
+        \item Abstraction for a bunch of possible values
+        \begin{itemize}
+            \item ``integer''
+        \end{itemize}
+        \item Tool for reasoning about program correctness
+        \item Follows \emph{syntactic structure} of terms:
+        \begin{itemize}
+            \item if $\lambda{x}.M$ is a function;
+            \item and $x: A$ (read: `x \emph{has type} A'), $M: B$;
+            \item then $\left(\lambda{x}.M\right):\left(A\rightarrow{B}\right)$
+        \end{itemize}
+    \end{itemize}}
+\end{frame}
+
+\section{Motivation}
+
+\begin{frame}{Isn't this against everything Python stands for?}
+    \pause\begin{exampleblock}{Zen of Python:}
+    \begin{itemize}[<+->]
+        \item Explicit is better than implicit
+        \item Readability counts
+        \item In the face of ambiguity, refuse the temptation to guess
+    \end{itemize}
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}{But if it smells like a duck I don't care what type it is}
+    \pause\begin{itemize}[<+->]
+        \item Oh, but you do!
+        \item `Duck typing' is an \emph{abstraction for a bunch of possible values} 
+        \item Typing is not at all incompatible
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Some (real!) code}
+    \pause\begin{itemize}[<+->]
+        \item How do I call this?
+        \begin{itemize}
+            \item \mintinline{python3}`def save_event(event):`
+            \item The docstring: \mintinline{python3}`":param event: The event to save."` doesn't help much!
+        \end{itemize}
+        \item What does this return?
+        \begin{itemize}
+            \item \mintinline{python3}`def deployed_devices(self):`
+            \item Probably some sort of collection of \mintinline{python3}`Device`s that are 'deployed', right?
+            \item Nope - the integer count of those
+        \end{itemize}
+        \item Or this?
+        \begin{itemize}
+            \item \mintinline{python3}`def get_firmware_manifest(...):`
+            \item \mintinline{python3}`":return: manifest contents or None (if none)."`
+            \item OK, but what \textit{is} the contents? \mintinline{python3}`bytes`? \mintinline{python3}`dict` of... `stuff'?  - \textit{reads the implementation} - oh, it's \mintinline{python3}`str`
+        \end{itemize}
+        \item What's in here?
+        \begin{itemize}
+            \item \mintinline{python3}`before_listen: dict`
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\section{Python annotations}
+
+\begin{frame}{Basic syntax}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`identifier: type = value`
+        \item \mintinline{python3}`identifier: CustomisableType[type] = value`
+        \item \mintinline{python3}`def function(identifier: type) -> type: ...`
+        \item \mintinline{python3}`def function(identifier: type = value) -> type: ...`
+    \end{itemize}
+
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`password: str = 'hunter2'`
+        \item \mintinline{python3}`def increment(num: int, by: int = 1) -> int: ...`
+    \end{itemize}
+    \end{examples}
+
+    \pause\begin{alertblock}{Note}
+        These are \emph{syntactic} examples - \mintinline{python3}`'hunter2'` can be \emph{inferred} to be \mintinline{python3}`str`, we don't need to annotate it.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}[shrink=10]{Sets \& Tuples \& Lists}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`identifier: Set[type] = value`
+        \item \mintinline{python3}`identifier: Tuple[type, type] = value`
+        \item \mintinline{python3}`identifier: Tuple[type, ...] = value`
+        \item \mintinline{python3}`identifier: List[type] = value`
+    \end{itemize}
+
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`pythons: Set[str] = {'cleese', 'idle', 'palin'}`
+        \item \mintinline{python3}`talk: Tuple[str, str] = ('types', 'pylondinium')`
+        \item \mintinline{python3}`initials: Tuple[str, ...] = ('o', 'j', 'f')`
+        \item \mintinline{python3}`talks: List[Tuple[str, str]] = [('types', 'pylondinium')]`
+    \end{itemize}
+    \end{examples}
+\end{frame}
+
+\begin{frame}[fragile,shrink=10]{Dictionaries}
+    \begin{itemize}[<+->]
+        \item Two paramaters now: key type; value type
+        \item \mintinline{python3}`identifier: Dict[type, type] = value`
+    \end{itemize}
+
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`age_people: Dict[int, List[str]] = {123: ['fred']}`
+        \item \mintinline{python3}`is_quite_old: Dict[str, bool] = {'fred': True}`
+        \item \begin{minted}[autogobble]{python3}
+            def people_ages(
+                age_people: Dict[int, str] = age_people,
+            ) -> Dict[str, int]:
+                return {
+                    person: age for age, people in age_people.items()
+                    for person in people
+                }
+        \end{minted}
+        \item \mintinline{python3}`def print_keys(d: Dict): ...`
+    \end{itemize}
+    \end{examples}
+\end{frame}
+
+\begin{frame}[fragile,shrink=10]{Sequences \& Iterables}
+    \begin{block}{Observation}
+        We don't always care about the \emph{precise} container type - especially in functions:
+        \begin{minted}[autogobble]{python3}
+            def contains_nuts(wrapper) -> bool:
+                return 'nuts' in wrapper
+        \end{minted}
+    \end{block}
+
+    \pause\begin{itemize}[<+->]
+        \item \mintinline{python3}`Iterable[type]` when we just want to iter through, like above;
+        \item \mintinline{python3}`Sequence[type]` when we want some order, no sets!
+    \end{itemize}
+
+    \pause\begin{alertblock}{Note}
+        Be flexible in arguments; precise in return types:
+        \begin{minted}[autogobble]{python3}
+        def sur_initials(
+            peoples_initials: Iterable[Sequence[str]],
+        ) -> Set[str]:
+            return {initials[-1] for initials in peoples_initials}
+        \end{minted}
+    \end{alertblock}
+\end{frame}
+
+
+\begin{frame}{None \& Optionals}
+    \begin{itemize}[<+->]
+        \item Not all functions return values
+        \item Remember \mintinline{python3}`def print_keys(d: Dict)`?
+        \item We can use \mintinline{python3}`def identifier() -> None`
+        \item \mintinline{python3}`Optional[type]` indicates a value \emph{maybe} \mintinline{python3}`None`
+    \end{itemize}
+
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`def print_keys(d: Dict) -> None`
+        \item \mintinline{python3}`def __init__(self) -> None`
+        \item \mintinline{python3}`def print_keys(d: Dict, colour: Optional[str])`
+    \end{itemize}
+    \end{examples}
+\end{frame}
+
+\begin{frame}[fragile]{Unions}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`Optional`'s great if a value might be \mintinline{python3}`None`, but what if it might be something else?
+        \item \mintinline{python3}`identifier: Union[type, type] = value`
+    \end{itemize}
+
+    \pause\begin{examples}
+    \begin{minted}[autogobble,fontsize=\small]{python3}
+        int_or_str: Union[int, str] = (
+            1 if random() > 0.01 else 'stupid, evil example'
+        )
+    \end{minted}
+    \end{examples}
+\end{frame}
+
+\begin{frame}{Variadic arguments}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`*args: type` $\implies$ \mintinline{python3}`args: Tuple[type, ...]`
+        \item \mintinline{python3}`**kwargs: type` $\implies$ \mintinline{python3}`kwargs: Dict[str, type]`
+    \end{itemize}
+    
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`def cat(*strs: str) -> str: return ''.join(args)`
+        \item \mintinline{python3}`def set_feature_flags(**features: bool)`
+    \end{itemize}
+    \end{examples}
+\end{frame}
+
+\begin{frame}{Callables}
+    \begin{itemize}[<+->]
+        \item Two parameters again: argument types; return type
+        \item \mintinline{python3}`identifier: Callable[[type], type] = value`
+        \item \mintinline{python3}`identifier: Callable = value`
+    \end{itemize}
+    
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`f: Callable = lambda: None`
+        \item \mintinline{python3}`def map_int(f: Callable[[int], int], Iterable[Int])`
+    \end{itemize}
+    \end{examples}
+\end{frame}
+
+\begin{frame}[fragile]{Generators \& Iterators}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`Generator` parameters: yield type, send type, return type
+        \item \mintinline{python3}`AsyncGenerator` parameters: yield type, send type
+        \item \mintinline{python3}`Iterator` parameters: yield type
+        \item Most often we have only \mintinline{python3}`Iterator`s, i.e. \mintinline{python3}`Generator[yield_type, None, None]`s
+    \end{itemize}
+    
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`ints: Iterator[int] = (i for i in range(100))`
+        \item \begin{minted}[autogobble]{python3}
+            chunks: Iterator = requests.get(
+                url,
+                stream=True,
+            ).iter_content()
+        \end{minted}
+    \end{itemize}
+    \end{examples}
+\end{frame}
+
+\begin{frame}[fragile]{Classes}
+    \begin{minted}[autogobble]{python3}
+        class Foo(object): pass
+        
+        foo1: Foo = Foo()
+        # because issubclass(Foo, object)
+        foo2: object = Foo()
+        
+        cls1: Type[Foo] = Foo().__class__  # = Foo
+        cls2: Type[object] = Foo().__class__  # = Foo
+        
+        # because isinstance(Foo, type) inherited from object
+        cls3: type = Foo().__class__  # = Foo
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Metaclasses}
+    \begin{minted}[autogobble]{python3}
+        class BarMeta(type): pass
+        class Bar(object, metaclass=BarMeta): pass
+        
+        bar1: Bar = Bar()
+        bar2: object = Bar()
+    
+        cls1: Type[Bar] = Bar().__class__  # = Bar
+        cls2: Type[object] = Bar().__class__  # = Bar
+        
+        # because isinstance(Bar, BarMeta)
+        cls3: BarMeta = Bar().__class__  # = Bar
+        # because issubclass(BarMeta, type)
+        cls4: type = Bar().__class__  # = Bar
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Better dictionaries \& tuples}
+    \begin{itemize}[<+->]
+        \item Having seen classes as types, we might think we can surely do better than \mintinline{python3}`Dict` and \mintinline{python3}`Tuple`...
+        \begin{itemize}
+            \item \mintinline{python3}`NamedTuple`
+            \item \mintinline{python3}`TypedDict`
+        \end{itemize}
+    \end{itemize}
+    
+    \pause\begin{minted}[autogobble]{python3}
+        # everything else presented is `from typing`
+        from mypy_extensions import TypedDict
+        
+        class PersonAge(NamedTuple):
+            name: str
+            age: int
+            
+        class Message(TypedDict):
+            body: Dict  # or better, its own TypedDict!
+            host: str
+            message_id: int
+            routing_key: Sequence[str]
+    \end{minted}
+\end{frame}
+
+\begin{frame}{Custom types \& aliases}
+    \begin{itemize}[<+->]
+        \item Earlier: \mintinline{python3}`peoples_initials: Iterable[Sequence[str]]`
+        \item ... it gets hard to read
+        \item Alias: \mintinline{python3}`Initials = Sequence[str]`, then \mintinline{python3}`Iterable[Initials]`
+        \item New types give more safety: \mintinline{python3}`DeviceId = NewType('DeviceId', str)`
+        \item ... now we can pass a \mintinline{python3}`DeviceId('1337deadbeef')` rather than ambiguous \mintinline{python3}`str`
+    \end{itemize}
+
+    \onslide<+->{\begin{alertblock}{Note}
+        Not every type can be used in \mintinline{python3}`NewType` - it must be \emph{subclassable}.
+    \end{alertblock}}
+\end{frame}
+
+\begin{frame}{Type variables}
+    \begin{itemize}[<+->]
+        \item Type variables stand in for a yet undetermined particular type at run-time - just as regular variables do for values
+        \item \mintinline{python3}`identifier = TypeVar(identifier_str)`
+        \item \mintinline{python3}`identifier = TypeVar(identifier_str, type, type)`
+        \item \mintinline{python3}`identifier = TypeVar(identifier_str, bound=type)`
+    \end{itemize}
+
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`T_any = TypeVar('T_any')`
+        \item \mintinline{python3}`T_int_or_str = TypeVar('T_int_or_str', int, str)`
+        \item \mintinline{python3}`T_int_like = TypeVar('T_int_like', bound=int)`
+    \end{itemize}
+    \end{examples}
+    
+    \pause\begin{alertblock}{Note}
+        A type variable that's one of \texttt{n} types is \emph{not} the same as a \mintinline{python3}`Union` of those types! `Why' next...
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}[fragile]{Generics}
+    \begin{itemize}[<+->]
+        \item We say that the sum operation is \emph{generic} over any type that it might reasonably be summing - viz. it doesn't much care what the types are; it'll call \mintinline{python3}`__add__` and return the same type
+        \item It's not just that it admits a bunch of \mintinline{python3}`Union[int, float, str, etc]` - it's that whichever it's given is also the type it returns!
+    \end{itemize}
+    
+    \pause\begin{minted}[autogobble,fontsize=\small]{python3}
+        T_summable = TypeVar('T_summable', int, float, str, etc)
+
+        def sum(*args: T_summable) -> Optional[T_summable]:
+            if not args:
+                return None
+            
+            return reduce(lambda acc, n: acc + n, args, 0)
+    \end{minted}
+\end{frame}
+
+\begin{frame}{Supports\*}
+    \begin{itemize}[<+->]
+        \item Sometimes we're willing to admit anything with a certain `magic method'
+        \item We have some built in \mintinline{python3}`SupportsMethod` types to help
+    \end{itemize}
+    
+    \pause\begin{examples}
+    \begin{itemize}[<+->]
+        \item \mintinline{python3}`def mode_score(*scores: SupportsInt) -> int: ...`
+        \item \mintinline{python3}`def transmit(data: SupportsBytes) -> None: ...`
+    \end{itemize}
+    \end{examples}
+\end{frame}
+
+\begin{frame}[fragile,shrink=10]{Protocols (in 3.7)}
+    \begin{itemize}[<+->]
+        \item PEP 544 (3.7 track) introduces structural subtyping (aka `static duck typing') through \mintinline{python3}`Protocol`s, analogous to Rust \mintinline{rust}`trait`s or Java  \mintinline{java}`interface`s
+        \item An ABC specifies a \mintinline{python3}`Protocol`, which we then use as a type for values which implement it
+        \item It may be thought of as a more flexible \mintinline{python3}`Supports`
+    \end{itemize}
+
+    \pause\begin{minted}[autogobble]{python3}
+        # Adapted from PEP 544
+        class Template(Protocol):
+            name: str
+            value: int = 0
+        
+        class Concrete:  # does not inherit - not a typo!
+            def __init__(self, name: str, value: int) -> None:
+                self.name = name
+                self.value = value
+        
+        var: Template = Concrete('value', 42)
+    \end{minted}
+\end{frame}
+
+\begin{frame}{Miscellaneous}
+    \begin{itemize}[<+->]
+        \item Forward references: \mintinline{python3}`def __lt__(self, other: 'ClassName') -> bool: ...`
+        \item \mintinline{python3}`cast(type, thing)` if you need to
+        \begin{itemize}
+            \item e.g. mypy can fail to understand \mintinline{python3}`isinstance` checks, so you can help it out with a \mintinline{python3}`cast` afterward
+        \end{itemize}
+        \item \mintinline{python3}`Any` - use it sparingly
+        \begin{itemize}
+            \item It is considered to have `all' attributes.
+            \item It (almost always) defeats the point.
+        \end{itemize}
+        \item \mintinline{python3}`TYPE_CHECKING is True` iff we're, well, type-checking - it's \mintinline{python3}`False` at run-time
+        \begin{itemize}
+            \item Sometimes an import for a type might cause a run-time-only problem;
+            \item If it's not worth fixing, we can opt to import only when type-checking.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Lots more I haven't covered...}
+    \begin{itemize}[<+->]
+        \item Covariance vs. contravariance vs. invariance
+        \item \mintinline{python3}`ContextManager`
+        \item \mintinline{python3}`Coroutine`
+        \item \mintinline{python3}`Awaitable`
+        \item \mintinline{python3}`Generic`
+        \item \mintinline{python3}`re` (regular expressions)
+        \item ...
+        \item See https://docs.python.org/3/library/typing.html
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{If this excites you...}
+    \begin{itemize}[<+->]
+        \item For the Python: PEPs 48\{2,3,4\}; 544
+        \item For the theory: Pierce's \textit{Types and Programming Languages}
+        \item For the win: Rust
+        \begin{itemize}
+            \item :troll-face:
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[standout]
+    Thank you!
+
+    \bigskip\normalsize
+    \faGithub\;\faTwitter\;\makeatletter@OJFord\\\#PyLondinium18
+\end{frame}
+
+\end{document}
